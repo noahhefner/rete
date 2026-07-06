@@ -1,0 +1,19 @@
+claim:
+  id: uuid
+  beneficiary_id: uuid
+  doctor_id: uuid
+  submitted_on: date
+  services_billed: 
+  
+doctor:
+  id: uuid
+  first_name: str
+  last_name: str
+  address: str
+  state: str
+
+beneficiary:
+  id: uuid
+  first_name: str
+  last_name: str
+  age: int
