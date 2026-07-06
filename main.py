@@ -2,238 +2,161 @@ from typing import Protocol, Any, Callable
 from dataclasses import dataclass
 from abc import abstractmethod
 
-type Predicate = Callable[[Fact], bool]
+type Rule = Callable[[Fact], bool]
+type NetworkNode = BetaNode | TerminalNode
+type JoinFunction = Callable[[Token, Fact], bool]
 
 @dataclass(frozen=True)
 class Fact:
+    fact_type: str
+    fact_data: Any
 
-    token: str
-    value: Any  # WARNING: May cause runtime errors if value is not hashable
+@dataclass(frozen=True)
+class Token:
+    facts: tuple[Fact, ...]
 
-class Node(Protocol):
+    def extend(self, fact: Fact) -> "Token":
+        return Token(self.facts + (fact,))
 
-    children: list[Node]
+class RootNode:
+    def __init__(self):
+        self.children: list["SelectorNode"] = []
 
-    def connect(self, node: Node):
-
+    def connect(self, node: "SelectorNode"):
         self.children.append(node)
 
-    @abstractmethod
-    def activate(self, facts: list[Fact]) -> None:
-        raise NotImplementedError
+    def activate(self, fact: Fact):
+        for child in self.children:
+            child.activate(fact)
 
-class AlphaNode(Node):
 
-    def __init__(self, predicate: Predicate):
+class SelectorNode:
+    def __init__(self, fact_type: str):
+        self.fact_type = fact_type
+        self.children: list["AlphaNode"] = []
 
-        self.predicate = predicate
+    def connect(self, node: "AlphaNode"):
+        self.children.append(node)
+
+    def activate(self, fact: Fact):
+        if fact.fact_type == self.fact_type:
+            for child in self.children:
+                child.activate(fact)
+
+
+class AlphaNode:
+    def __init__(self, func: Rule):
+        self.func = func
         self.memory: list[Fact] = []
-        self.children: list[Node] = []
+        self.children: list["BetaNode"] = []
 
-    def activate(self, facts: list[Fact]) -> None:
+    def connect(self, node: "BetaNode"):
+        # NOTE: What if I want to connect an Alpha node directly to a Terminal node?
+        self.children.append(node)
 
-        if not self.predicate(facts[0]):
-            return
+    def activate(self, fact: Fact):
+        if self.func(fact):
+            self.memory.append(fact)
 
-        self.memory.append(facts[0])
+            for child in self.children:
+                child.right_activate(fact)
 
-        for child in self.children:
-            child.activate(facts)
 
-class BetaNode(Node):
-
-    def __init__(self):
-
-        self.children: list[Node] = []
-        self.left_memory: list[Fact] = []
+class BetaNode:
+    def __init__(self, join_func: JoinFunction):
+        self.children: list["NetworkNode"] = []
+        self.left_memory: list[Token] = []
         self.right_memory: list[Fact] = []
+        self.join_func = join_func
 
-    def activate(self, facts: list[Fact]) -> None:
-        raise RuntimeError("Use left_activate or right_activate for Beta nodes.")
+    def connect(self, node: "NetworkNode"):
+        self.children.append(node)
 
-    def left_activate(self, facts: list[Fact]):
+    def left_activate(self, token: Token):
+        self.left_memory.append(token)
 
-        # Add incoming facts to left memory
-        self.left_memory = list(set(self.left_memory + facts))
+        for fact in self.right_memory:
+            if self.join_func(token, fact):
+                new_token = token.extend(fact)
+                for child in self.children:
+                    child.left_activate(new_token)
 
-        # Do not activate children if the right side has not
-        # been activated yet
-        if not self.right_memory:
-            return
+    def right_activate(self, fact: Fact):
+        self.right_memory.append(fact)
 
-        # Propagate all facts to children
-        all_facts = list(set(self.left_memory + self.right_memory))
-        for child in self.children:
-            child.activate(all_facts)
+        for token in self.left_memory:
+            if self.join_func(token, fact):
+                new_token = token.extend(fact)
+                for child in self.children:
+                    child.left_activate(new_token)
 
-    def right_activate(self, facts: list[Fact]):
 
-        # Add incoming facts to right memory
-        self.right_memory = list(set(self.right_memory + facts))
-
-        # Do not activate children if the left side has not
-        # been activated yet
-        if not self.left_memory:
-            return
-
-        # Propagate all facts to children
-        all_facts = list(set(self.left_memory + self.right_memory))
-        for child in self.children:
-            child.activate(all_facts)
-
-class BetaRightAdapter(Node):
-
-    def connect(self, node: Node):
-
-        if not isinstance(node, BetaNode):
-            raise TypeError("BetaRightAdapter can only connect to a BetaNode")
-
-        self.children = [node]
-
-    def activate(self, facts: list[Fact]) -> None:
-
-        if not self.children:
-            raise RuntimeError("BetaRightAdapter not connected.")
-
-        if not isinstance(self.children[0], BetaNode):
-            raise RuntimeError("BetaLeftAdapter connected to wrong Node type.")
-
-        self.children[0].right_activate(facts)
-
-class BetaLeftAdapter(Node):
-
-    def connect(self, node: Node):
-
-        if not isinstance(node, BetaNode):
-            raise TypeError("BetaLeftAdapter can only connect to a BetaNode")
-
-        self.children = [node]
-
-    def activate(self, facts: list[Fact]) -> None:
-
-        if not self.children:
-            raise RuntimeError("BetaLeftAdapter not connected.")
-
-        if not isinstance(self.children[0], BetaNode):
-            raise RuntimeError("BetaLeftAdapter connected to wrong Node type.")
-
-        self.children[0].left_activate(facts)
-
-class TerminalNode(Node):
+class TerminalNode:
 
     def __init__ (self, name: str):
 
         self.name = name
 
-    def activate(self, facts: list[Fact]):
+    def activate(self, token: Token):
 
-        print(f"Terminal node {self.name} activated! Facts: {facts}")
+        print(f"Terminal node {self.name} activated! Token: {token}")
+
 
 class ReteNetwork:
+    def __init__(self):
+        self.root = RootNode()
 
-    def __init__(self, network: list[AlphaNode]):
+    def assert_fact(self, fact: Fact):
+        self.root.activate(fact)
 
-        self.root_nodes: list[AlphaNode] = network
 
-    def assert_fact(self, fact: Fact) -> None:
+def person_account_join(token: Token, fact: Fact) -> bool:
+    for f in token.facts:
+        if f.fact_type == "Person":
+            return f.fact_data["name"] == fact.fact_data["owner"]
 
-        for node in self.root_nodes:
-
-            node.activate([fact])
+    return False
 
 def main():
 
-    # ------------------------
-    # Setup Alpha Nodes
-    # ------------------------
+    net = ReteNetwork()
 
-    def age_check(fact: Fact) -> bool:
+    person_sel = SelectorNode("Person")
+    account_sel = SelectorNode("Account")
 
-        if not fact.token == "age":
-            return False
+    alpha_person = AlphaNode(lambda f: True)
+    alpha_account = AlphaNode(lambda f: True)
 
-        if not isinstance(fact.value, int):
-            return False
+    beta = BetaNode(person_account_join)
 
-        return fact.value >= 18
+    terminal = TerminalNode("match")
 
-    def country_check(fact: Fact) -> bool:
+    net.root.connect(person_sel)
+    net.root.connect(account_sel)
 
-        if not fact.token == "country":
-            return False
+    person_sel.connect(alpha_person)
+    account_sel.connect(alpha_account)
 
-        if not isinstance(fact.value, str):
-            return False
+    alpha_person.connect(beta)
+    alpha_account.connect(beta)
 
-        return fact.value == "USA"
+    beta.connect(terminal)
 
-    def job_check(fact: Fact) -> bool:
+    beta.left_activate(Token(tuple()))  # bootstrap
 
-        if not fact.token == "job":
-            return False
+    facts = [
+        Fact("Person", {"name": "Alice", "age": 30}),
+        Fact("Person", {"name": "Bob", "age": 17}),
+        Fact("Person", {"name": "Charlie", "age": 40}),
 
-        if not isinstance(fact.value, str):
-            return False
+        Fact("Account", {"owner": "Alice", "balance": 5000}),
+        Fact("Account", {"owner": "Bob", "balance": 200}),
+        Fact("Account", {"owner": "Diana", "balance": 9000}),
+    ]
 
-        return fact.value == "engineer"
+    for f in facts:
+        net.assert_fact(f)
 
-    alpha_age_check = AlphaNode(age_check)
-    alpha_job_check = AlphaNode(job_check)
-    alpha_country_check = AlphaNode(country_check)
-
-    # ------------------------
-    # Setup Beta Nodes
-    # ------------------------
-
-    beta_adult_engineer = BetaNode()
-    beta_adult_engineer_left_adapter = BetaLeftAdapter()
-    beta_adult_engineer_right_adapter = BetaRightAdapter()
-    beta_adult_engineer_left_adapter.connect(beta_adult_engineer)
-    beta_adult_engineer_right_adapter.connect(beta_adult_engineer)
-
-    alpha_age_check.connect(beta_adult_engineer_left_adapter)
-    alpha_job_check.connect(beta_adult_engineer_right_adapter)
-
-    all_three = BetaNode()
-    all_three_left_adapter = BetaLeftAdapter()
-    all_three_right_adapter = BetaRightAdapter()
-    all_three_left_adapter.connect(all_three)
-    all_three_right_adapter.connect(all_three)
-
-    beta_adult_engineer.connect(all_three_left_adapter)
-    alpha_country_check.connect(all_three_right_adapter)
-    
-    # ------------------------
-    # Setup Terminal Nodes
-    # ------------------------
-
-    terminal_adult_engineer = TerminalNode("Adult Engineer")
-    beta_adult_engineer.connect(terminal_adult_engineer)
-
-    terminal_all_three = TerminalNode("All Three")
-    all_three.connect(terminal_all_three)
-
-    # ------------------------
-    # Setup Rete Network
-    # ------------------------
-
-    network = ReteNetwork([
-        alpha_age_check,
-        alpha_job_check,
-        alpha_country_check
-    ])
-
-    # ------------------------
-    # Send in Facts
-    # ------------------------
-
-    fact_one = Fact("age", 26)
-    fact_two = Fact("country", "USA")
-    fact_three = Fact("job", "engineer")
-
-    network.assert_fact(fact_one)
-    network.assert_fact(fact_two)
-    network.assert_fact(fact_three)
 
 if __name__ == "__main__":
 
