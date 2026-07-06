@@ -1,15 +1,16 @@
-from typing import Protocol, Any, Callable
+from typing import Any, Callable
 from dataclasses import dataclass
-from abc import abstractmethod
 
 type Rule = Callable[[Fact], bool]
-type NetworkNode = BetaNode | TerminalNode
 type JoinFunction = Callable[[Token, Fact], bool]
+type BetaChildren = BetaLeftAdapter | TerminalNode
+
 
 @dataclass(frozen=True)
 class Fact:
     fact_type: str
     fact_data: Any
+
 
 @dataclass(frozen=True)
 class Token:
@@ -17,6 +18,7 @@ class Token:
 
     def extend(self, fact: Fact) -> "Token":
         return Token(self.facts + (fact,))
+
 
 class RootNode:
     def __init__(self):
@@ -48,34 +50,34 @@ class AlphaNode:
     def __init__(self, func: Rule):
         self.func = func
         self.memory: list[Fact] = []
-        self.children: list["BetaNode"] = []
+        self.children: list["BetaRightAdapter"] = []
 
-    def connect(self, node: "BetaNode"):
-        # NOTE: What if I want to connect an Alpha node directly to a Terminal node?
+    def connect(self, node: "BetaRightAdapter"):
         self.children.append(node)
 
     def activate(self, fact: Fact):
+
         if self.func(fact):
             self.memory.append(fact)
-
             for child in self.children:
-                child.right_activate(fact)
+                child.activate(fact)
 
 
 class BetaNode:
     def __init__(self, join_func: JoinFunction, dummy: bool = False):
-        self.children: list["NetworkNode"] = []
+        self.children: list["BetaChildren"] = []
         self.left_memory: list[Token] = []
         self.right_memory: list[Fact] = []
         self.join_func: JoinFunction = join_func
         self.dummy = dummy
 
-    def connect(self, node: "NetworkNode"):
+    def connect(self, node: "BetaChildren"):
         self.children.append(node)
 
     def left_activate(self, token: Token):
 
         if self.dummy:
+            print("Left activated a dummy Beta node. No action taken.")
             return
 
         self.left_memory.append(token)
@@ -84,37 +86,44 @@ class BetaNode:
             if self.join_func(token, fact):
                 new_token = token.extend(fact)
                 for child in self.children:
-                    if isinstance(child, BetaNode):
-                        child.left_activate(new_token)
-                    if isinstance(child, TerminalNode):
-                        child.activate(token)
+                    child.activate(new_token)
 
     def right_activate(self, fact: Fact):
+
+        self.right_memory.append(fact)
 
         if self.dummy:
             token = Token(facts=())
             token = token.extend(fact)
             for child in self.children:
-                if isinstance(child, BetaNode):
-                    child.left_activate(token)
-                if isinstance(child, TerminalNode):
-                    child.activate(token)
+                child.activate(token)
             return
-
-        self.right_memory.append(fact)
 
         for token in self.left_memory:
             if self.join_func(token, fact):
                 new_token = token.extend(fact)
                 for child in self.children:
-                    if isinstance(child, BetaNode):
-                        child.left_activate(new_token)
-                    if isinstance(child, TerminalNode):
-                        child.activate(new_token)
+                    child.activate(new_token)
+
+
+class BetaRightAdapter:
+    def __init__(self, beta: BetaNode):
+        self.beta = beta
+
+    def activate(self, fact: Fact):
+        self.beta.right_activate(fact)
+
+
+class BetaLeftAdapter:
+    def __init__(self, beta: BetaNode):
+        self.beta = beta
+
+    def activate(self, token: Token):
+        self.beta.left_activate(token)
 
 
 class TerminalNode:
-    def __init__ (self, name: str):
+    def __init__(self, name: str):
         self.name = name
 
     def activate(self, token: Token):
@@ -136,8 +145,15 @@ def person_account_join(token: Token, fact: Fact) -> bool:
 
     return False
 
+
 def dummy_beta_function(token: Token, fact: Fact) -> bool:
     return True
+
+
+def is_it_jerry(fact: Fact) -> bool:
+
+    return fact.fact_data["name"] == "Jerry"
+
 
 def main():
 
@@ -148,32 +164,45 @@ def main():
 
     alpha_person = AlphaNode(lambda f: True)
     alpha_account = AlphaNode(lambda f: True)
+    alpha_person_is_jerry = AlphaNode(is_it_jerry)
 
     beta_dummy = BetaNode(dummy_beta_function, dummy=True)
+    beta_dummy_right_adapter = BetaRightAdapter(beta_dummy)
+
     beta = BetaNode(person_account_join)
+    beta_left_adapter = BetaLeftAdapter(beta)
+    beta_right_adapter = BetaRightAdapter(beta)
+
+    beta_dummy_jerry = BetaNode(dummy_beta_function, dummy=True)
+    beta_dummy_jerry_right_adapter = BetaRightAdapter(beta_dummy_jerry)
 
     terminal = TerminalNode("match")
+    terminal_jerry = TerminalNode("YO WE GOT JERRY IN DA HOUSE!!!")
 
     net.root.connect(person_sel)
     net.root.connect(account_sel)
 
     person_sel.connect(alpha_person)
     account_sel.connect(alpha_account)
+    person_sel.connect(alpha_person_is_jerry)
 
-    alpha_person.connect(beta_dummy)
-    alpha_account.connect(beta)
+    alpha_person.connect(beta_dummy_right_adapter)
+    alpha_account.connect(beta_right_adapter)
+    alpha_person_is_jerry.connect(beta_dummy_jerry_right_adapter)
 
-    beta_dummy.connect(beta)
+    beta_dummy.connect(beta_left_adapter)
     beta.connect(terminal)
+
+    beta_dummy_jerry.connect(terminal_jerry)
 
     facts = [
         Fact("Person", {"name": "Alice", "age": 30}),
-        #Fact("Person", {"name": "Bob", "age": 17}),
-        #Fact("Person", {"name": "Charlie", "age": 40}),
-
+        Fact("Person", {"name": "Bob", "age": 17}),
+        Fact("Person", {"name": "Charlie", "age": 40}),
+        Fact("Person", {"name": "Jerry", "age": 37}),
         Fact("Account", {"owner": "Alice", "balance": 5000}),
-        #Fact("Account", {"owner": "Bob", "balance": 200}),
-        #Fact("Account", {"owner": "Diana", "balance": 9000}),
+        Fact("Account", {"owner": "Bob", "balance": 200}),
+        Fact("Account", {"owner": "Diana", "balance": 9000}),
     ]
 
     for f in facts:
