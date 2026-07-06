@@ -63,42 +63,61 @@ class AlphaNode:
 
 
 class BetaNode:
-    def __init__(self, join_func: JoinFunction):
+    def __init__(self, join_func: JoinFunction, dummy: bool = False):
         self.children: list["NetworkNode"] = []
         self.left_memory: list[Token] = []
         self.right_memory: list[Fact] = []
-        self.join_func = join_func
+        self.join_func: JoinFunction = join_func
+        self.dummy = dummy
 
     def connect(self, node: "NetworkNode"):
         self.children.append(node)
 
     def left_activate(self, token: Token):
+
+        if self.dummy:
+            return
+
         self.left_memory.append(token)
 
         for fact in self.right_memory:
             if self.join_func(token, fact):
                 new_token = token.extend(fact)
                 for child in self.children:
-                    child.left_activate(new_token)
+                    if isinstance(child, BetaNode):
+                        child.left_activate(new_token)
+                    if isinstance(child, TerminalNode):
+                        child.activate(token)
 
     def right_activate(self, fact: Fact):
+
+        if self.dummy:
+            token = Token(facts=())
+            token = token.extend(fact)
+            for child in self.children:
+                if isinstance(child, BetaNode):
+                    child.left_activate(token)
+                if isinstance(child, TerminalNode):
+                    child.activate(token)
+            return
+
         self.right_memory.append(fact)
 
         for token in self.left_memory:
             if self.join_func(token, fact):
                 new_token = token.extend(fact)
                 for child in self.children:
-                    child.left_activate(new_token)
+                    if isinstance(child, BetaNode):
+                        child.left_activate(new_token)
+                    if isinstance(child, TerminalNode):
+                        child.activate(new_token)
 
 
 class TerminalNode:
-
     def __init__ (self, name: str):
-
         self.name = name
 
     def activate(self, token: Token):
-
         print(f"Terminal node {self.name} activated! Token: {token}")
 
 
@@ -117,6 +136,9 @@ def person_account_join(token: Token, fact: Fact) -> bool:
 
     return False
 
+def dummy_beta_function(token: Token, fact: Fact) -> bool:
+    return True
+
 def main():
 
     net = ReteNetwork()
@@ -127,6 +149,7 @@ def main():
     alpha_person = AlphaNode(lambda f: True)
     alpha_account = AlphaNode(lambda f: True)
 
+    beta_dummy = BetaNode(dummy_beta_function, dummy=True)
     beta = BetaNode(person_account_join)
 
     terminal = TerminalNode("match")
@@ -137,21 +160,20 @@ def main():
     person_sel.connect(alpha_person)
     account_sel.connect(alpha_account)
 
-    alpha_person.connect(beta)
+    alpha_person.connect(beta_dummy)
     alpha_account.connect(beta)
 
+    beta_dummy.connect(beta)
     beta.connect(terminal)
-
-    beta.left_activate(Token(tuple()))  # bootstrap
 
     facts = [
         Fact("Person", {"name": "Alice", "age": 30}),
-        Fact("Person", {"name": "Bob", "age": 17}),
-        Fact("Person", {"name": "Charlie", "age": 40}),
+        #Fact("Person", {"name": "Bob", "age": 17}),
+        #Fact("Person", {"name": "Charlie", "age": 40}),
 
         Fact("Account", {"owner": "Alice", "balance": 5000}),
-        Fact("Account", {"owner": "Bob", "balance": 200}),
-        Fact("Account", {"owner": "Diana", "balance": 9000}),
+        #Fact("Account", {"owner": "Bob", "balance": 200}),
+        #Fact("Account", {"owner": "Diana", "balance": 9000}),
     ]
 
     for f in facts:
@@ -159,5 +181,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()
