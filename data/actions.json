@@ -1,0 +1,9 @@
+[
+  {
+    "id": "flag-manual-review",
+    "type": "flag_claim",
+    "parameters": {
+      "reason": "Manual Review"
+    }
+  }
+]

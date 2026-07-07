@@ -1,0 +1,13 @@
+[
+  {
+    "id": "senior-ca-review",
+    "description": "Senior beneficiaries treated in California require review.",
+    "expression": {
+      "all": [
+        {"cel": "beneficiary.age >= 65"},
+        {"cel": "doctor.state == 'CA'"}
+      ]
+    },
+    "action": "flag-manual-review"
+  }
+]

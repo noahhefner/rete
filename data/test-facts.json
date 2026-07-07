@@ -1,0 +1,40 @@
+[
+  {
+    "fact_type": "beneficiary",
+    "fact_data": {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "first_name": "Alice",
+      "last_name": "Smith",
+      "age": 70
+    }
+  },
+  {
+    "fact_type": "doctor",
+    "fact_data": {
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "first_name": "Bob",
+      "last_name": "Jones",
+      "address": "123 Main St",
+      "state": "CA"
+    }
+  },
+  {
+    "fact_type": "beneficiary",
+    "fact_data": {
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "first_name": "Charlie",
+      "last_name": "Brown",
+      "age": 30
+    }
+  },
+  {
+    "fact_type": "doctor",
+    "fact_data": {
+      "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+      "first_name": "Diana",
+      "last_name": "Prince",
+      "address": "456 Oak Ave",
+      "state": "NY"
+    }
+  }
+]

@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Healthcare Data Schema",
+  "type": "object",
+  "properties": {
+    "claim": {
+      "$ref": "#/$defs/claim"
+    },
+    "doctor": {
+      "$ref": "#/$defs/doctor"
+    },
+    "beneficiary": {
+      "$ref": "#/$defs/beneficiary"
+    }
+  },
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "beneficiary_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "doctor_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "submitted_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "services_billed": {
+          "type": "array",
+          "items": {}
+        }
+      },
+      "required": [
+        "id",
+        "beneficiary_id",
+        "doctor_id",
+        "submitted_on",
+        "services_billed"
+      ],
+      "additionalProperties": false
+    },
+    "doctor": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "first_name",
+        "last_name",
+        "address",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "beneficiary": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "first_name": {
+          "type": "string"
+        },
+        "last_name": {
+          "type": "string"
+        },
+        "age": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "first_name",
+        "last_name",
+        "age"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

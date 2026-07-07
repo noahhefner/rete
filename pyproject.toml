@@ -4,7 +4,14 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "common-expression-language>=0.7.0",
+    "jsonschema>=4.26.0",
+    "typing-extensions>=4.16.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["rete*"]
 
 [dependency-groups]
 dev = [
