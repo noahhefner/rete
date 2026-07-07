@@ -1,7 +1,8 @@
 import argparse
 
 from rete.nodes import Fact
-from rete.parser import load_rules, load_actions, load_schemas, load_facts, build_network
+from rete.parser import (build_network, load_actions, load_facts, load_rules,
+                         load_schemas)
 
 
 def main():

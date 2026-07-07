@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any
+
 from cel import compile as cel_compile
 
 

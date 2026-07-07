@@ -15,6 +15,8 @@ include = ["rete*"]
 
 [dependency-groups]
 dev = [
+    "isort>=8.0.1",
     "ruff>=0.15.20",
     "ty>=0.0.56",
+    "uv-upsync>=2.4.1",
 ]

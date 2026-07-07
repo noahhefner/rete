@@ -1,11 +1,10 @@
 import json
+
 from cel import compile as cel_compile
 
-from rete.nodes import (
-    SelectorNode, AlphaNode, BetaNode,
-    DummyTopNode, TerminalNode, BetaLeftAdapter, BetaRightAdapter,
-)
 from rete.network import ReteNetwork
+from rete.nodes import (AlphaNode, BetaLeftAdapter, BetaNode, BetaRightAdapter,
+                        DummyTopNode, SelectorNode, TerminalNode)
 from rete.validator import SchemaValidator
 
 

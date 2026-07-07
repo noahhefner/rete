@@ -1,4 +1,4 @@
-from rete.nodes import RootNode, Fact
+from rete.nodes import Fact, RootNode
 from rete.validator import SchemaValidator
 
 

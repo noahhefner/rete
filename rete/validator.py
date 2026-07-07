@@ -1,5 +1,7 @@
 import json
+
 from jsonschema import validate
+
 from rete.nodes import Fact
 
 
