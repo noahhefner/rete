@@ -5,5 +5,12 @@
     "parameters": {
       "reason": "Manual Review"
     }
+  },
+  {
+    "id": "fraudulent-claim",
+    "type": "fraud",
+    "parameters": {
+      "reason": "Fraudulent Doctor ID"
+    }
   }
 ]

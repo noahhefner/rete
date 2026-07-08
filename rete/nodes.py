@@ -45,8 +45,8 @@ class SelectorNode:
 
 
 class AlphaNode:
-    def __init__(self, expressions: list[str] | None = None):
-        self.programs = [cel_compile(e) for e in (expressions or [])]
+    def __init__(self, expression: str):
+        self.program = cel_compile(expression)
         self.memory: list[Fact] = []
         self.children: list["DummyTopNode | BetaRightAdapter"] = []
 
@@ -60,16 +60,11 @@ class AlphaNode:
                 child.activate(fact)
 
     def _matches(self, fact: Fact) -> bool:
-        if not self.programs:
-            return True
         ctx = {fact.fact_type: fact.fact_data}
-        for prog in self.programs:
-            needed = set(prog.variables())
-            if not needed.issubset(ctx.keys()):
-                return False
-            if not prog.execute(ctx):
-                return False
-        return True
+        needed = set(self.program.variables())
+        if not needed.issubset(ctx.keys()):
+            return False
+        return self.program.execute(ctx)
 
 
 class DummyTopNode:
@@ -88,32 +83,37 @@ class DummyTopNode:
 
 
 class BetaNode:
-    def __init__(self, has_right_input: bool = False):
-        self.program = None
-        self.has_right_input = has_right_input
+
+    # TODO: This class should accept a list of join tests to run. The join tests
+    # should be inferred in build_network()
+
+    def __init__(self):
         self.left_memory: list[Token] = []
         self.right_memory: list[Fact] = []
         self.children: list["TerminalNode | BetaLeftAdapter"] = []
-
-    def set_join(self, expression: str) -> None:
-        self.program = cel_compile(expression)
 
     def connect(self, node: "TerminalNode | BetaLeftAdapter") -> None:
         self.children.append(node)
 
     def left_activate(self, token: Token) -> None:
+        """Join an incoming Token with Facts stored in right memory.
+        
+        Extend and propagate partial matches to child nodes.
+        """
+
         self.left_memory.append(token)
         for fact in self.right_memory:
             if self._check_join(token, fact):
                 new_token = token.extend(fact)
                 for child in self.children:
                     child.activate(new_token)
-        if not self.has_right_input:
-            if self._check_token(token):
-                for child in self.children:
-                    child.activate(token)
 
     def right_activate(self, fact: Fact) -> None:
+        """Join an incoming Fact with Tokens stored in left memory.
+
+        Extend and propagate partial matches to child nodes.
+        """
+
         self.right_memory.append(fact)
         for token in self.left_memory:
             if self._check_join(token, fact):
@@ -122,19 +122,23 @@ class BetaNode:
                     child.activate(new_token)
 
     def _check_join(self, token: Token, fact: Fact) -> bool:
-        if self.program is None:
-            return True
+        """Perform a JOIN on a Token and a Fact.
+        
+        """
+
+
         ctx: dict[str, Any] = {}
         for f in (*token.facts, fact):
             ctx[f.fact_type] = f.fact_data
+
         needed = set(self.program.variables())
+        
         if not needed.issubset(ctx.keys()):
             return False
+        
         return self.program.execute(ctx)
 
     def _check_token(self, token: Token) -> bool:
-        if self.program is None:
-            return True
         ctx: dict[str, Any] = {f.fact_type: f.fact_data for f in token.facts}
         needed = set(self.program.variables())
         if not needed.issubset(ctx.keys()):
