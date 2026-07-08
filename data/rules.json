@@ -6,7 +6,6 @@
       "all": [
         {"cel": "beneficiary.age >= 65"},
         {"cel": "beneficiary.age <= 100"},
-        {"cel": "beneficiary.name == 'Jack'"},
         {"cel": "doctor.state == 'CA'"}
       ]
     },
