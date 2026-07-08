@@ -7,6 +7,8 @@ from rete.nodes import Fact
 
 class SchemaValidator:
     def __init__(self, schemas_path: str):
+        """Opens a JSON Schemas file and extracts all schema definitions."""
+
         with open(schemas_path) as f:
             raw = json.load(f)
         self.schemas: dict[str, dict] = {}
@@ -18,6 +20,13 @@ class SchemaValidator:
                 self.schemas[ft_name] = schema
 
     def validate(self, fact: Fact) -> None:
+        """Checks fact data shape against known schemas.
+        
+        The fact type field indicates which schema the fact data should
+        align to. Raises a ValueError if the fact data is not shaped 
+        properly.
+        """
+
         schema = self.schemas.get(fact.fact_type)
         if schema is None:
             raise ValueError(f"No schema defined for fact type: {fact.fact_type}")

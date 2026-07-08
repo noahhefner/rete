@@ -1,8 +1,13 @@
 import argparse
 
 from rete.nodes import Fact
-from rete.parser import (build_network, load_actions, load_facts, load_rules,
-                         load_schemas)
+from rete.parser import (
+    build_network, 
+    load_actions, 
+    load_facts, 
+    load_rules,
+    load_schemas,
+)
 
 
 def main():
@@ -13,10 +18,10 @@ def main():
     parser.add_argument("--facts", default="data/test-facts.json", help="Path to facts file")
     args = parser.parse_args()
 
-    validator = load_schemas(args.schemas)
+    schema_validator = load_schemas(args.schemas)
     rules_data = load_rules(args.rules)
     actions_data = load_actions(args.actions)
-    net = build_network(rules_data, actions_data, validator)
+    net = build_network(rules_data, actions_data, schema_validator)
 
     raw_facts = load_facts(args.facts)
     for raw in raw_facts:

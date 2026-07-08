@@ -1,13 +1,61 @@
 [
   {
     "id": "senior-ca-review",
-    "description": "Senior beneficiaries treated in California require review.",
+    "description": "Senior beneficiaries named Jack treated in California require review.",
     "expression": {
       "all": [
         {"cel": "beneficiary.age >= 65"},
+        {"cel": "beneficiary.age <= 100"},
         {"cel": "doctor.state == 'CA'"}
       ]
     },
     "action": "flag-manual-review"
+  },
+  {
+    "id": "senior-nc-review",
+    "description": "Senior beneficiaries treated in North Carolina require review.",
+    "expression": {
+      "all": [
+        {"cel": "beneficiary.age >= 65"},
+        {"cel": "beneficiary.age <= 100"},
+        {"cel": "doctor.state == 'NC'"}
+      ]
+    },
+    "action": "flag-manual-review"
+  },  
+  {
+    "id": "senior-nc-review",
+    "description": "Senior beneficiaries treated in North Carolina require review.",
+    "expression": {
+      "all": [
+        {"cel": "beneficiary.age >= 65"},
+        {"cel": "beneficiary.age <= 100"},
+        {"cel": "doctor.state == 'NC'"}
+      ]
+    },
+    "action": "flag-manual-review"
+  },
+  {
+    "id": "senior-nc-review",
+    "description": "Senior beneficiaries treated in North Carolina require review.",
+    "expression": {
+      "all": [
+        {"cel": "claim.beneficiary_id == beneficiary.id"},
+        {"cel": "claim.doctor_id == doctor.id"},
+        {"cel": "beneficiary.age >= 65"},
+        {"cel": "doctor.state == 'NC'"}
+      ]
+    },
+    "action": "flag-manual-review"
+  },
+  {
+    "id": "fraudulent-doctor-id",
+    "description": "Treat all claims with doctor ID 11111111-1111-1111-1111-111111111111 as fraud.",
+    "expression": {
+      "all": [
+        {"cel": "claim.doctor_id == 11111111-1111-1111-1111-111111111111"}
+      ]
+    },
+    "action": "fraudulent-claim"
   }
 ]
