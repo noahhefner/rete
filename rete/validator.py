@@ -21,9 +21,9 @@ class SchemaValidator:
 
     def validate(self, fact: Fact) -> None:
         """Checks fact data shape against known schemas.
-        
+
         The fact type field indicates which schema the fact data should
-        align to. Raises a ValueError if the fact data is not shaped 
+        align to. Raises a ValueError if the fact data is not shaped
         properly.
         """
 

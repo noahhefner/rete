@@ -2,9 +2,9 @@ import argparse
 
 from rete.nodes import Fact
 from rete.parser import (
-    build_network, 
-    load_actions, 
-    load_facts, 
+    build_network,
+    load_actions,
+    load_facts,
     load_rules,
     load_schemas,
 )
@@ -13,9 +13,15 @@ from rete.parser import (
 def main():
     parser = argparse.ArgumentParser(description="Rete algorithm rule engine")
     parser.add_argument("--rules", default="data/rules.json", help="Path to rules file")
-    parser.add_argument("--schemas", default="data/schemas.json", help="Path to schemas file")
-    parser.add_argument("--actions", default="data/actions.json", help="Path to actions file")
-    parser.add_argument("--facts", default="data/test-facts.json", help="Path to facts file")
+    parser.add_argument(
+        "--schemas", default="data/schemas.json", help="Path to schemas file"
+    )
+    parser.add_argument(
+        "--actions", default="data/actions.json", help="Path to actions file"
+    )
+    parser.add_argument(
+        "--facts", default="data/test-facts.json", help="Path to facts file"
+    )
     args = parser.parse_args()
 
     schema_validator = load_schemas(args.schemas)
